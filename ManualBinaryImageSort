@@ -1,0 +1,49 @@
+#!/bin/bash
+
+if [ ! $# -eq 3 ]; then
+        echo "Not enough arguments provided! Need exactly 3 arguments:
+ - first the path to the folder containing the images
+ - second the name of the folder for the 'd'-button
+ - second the name of the folder for the 'l'-button"
+fi
+
+folderPath="$1"
+folderNameLeft="$2"
+folderNameRight="$3"
+
+if [ -d "$folderPath" ]; then
+    cd "$folderPath"
+fi
+
+if [[ "$folderNameLeft" == "$folderNameRight" ]]; then
+    echo "Second and third argument cannot be identical. Aborting"
+    exit 0
+else
+    mkdir -p "$folderNameLeft"
+    mkdir -p "$folderNameRight"
+fi
+
+wmctrl -T screwSorter$$ -r :ACTIVE:
+for filename in *.{png,jpg,bmp,tiff}; do
+    feh -Z -g 300x300 "$filename" & sleep 0.2
+    windowId=$!
+
+    wmctrl -a screwSorter$$    
+    while read -r -s -n1 key; do
+        if [[ $key == $'\e' ]]; then
+            kill "$windowId"
+            exit 0
+            break;
+        elif [[ $key == $'d' ]]; then
+            echo "Left"
+            kill "$windowId"
+            mv "$filename" "$folderNameLeft"/"$filename"
+            break;
+        elif [[ $key == $'l' ]]; then
+            echo "Right"
+            kill "$windowId"
+            mv "$filename" "$folderNameRight"/"$filename"
+            break;
+        fi
+    done
+done
